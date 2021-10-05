@@ -29,6 +29,12 @@ Usage: `python competence_levels.py TERM_INDEX TEST_INDEX`
 
 This tool creates an on-screen, HTML and PDF report of the competence levels for the specified test; the reports are saved in the `reports` directory.
 
+### Student List
+
+Usage: `python student_list.py CLASS`
+
+This tool lists the students of the specified class (e.g. 1A).
+
 ## License
 
 ClasseViva tools is licensed under the terms of the GNU Affero General Public License version 3.
