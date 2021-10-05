@@ -30,6 +30,8 @@ if __name__ == "__main__":
     cv = ClasseViva(USERNAME, PASSWORD)
     subjects = cv.get_subjects()
     out_dir = os.path.join(os.getcwd(), "reports")
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
     html_file = os.path.join(out_dir, "out.html")
     with open(html_file, "w") as f:
         f.write("<style>td,th{border:1px solid black}</style>")
