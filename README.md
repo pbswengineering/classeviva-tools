@@ -6,8 +6,8 @@
 > Command line tools to simplify the work of teachers on the ClasseViva (Spaggiari) online gradebook.
 
 [![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)](https://www.python.org)
-[![License](https://img.shields.io/github/license/pbswnegineering/classeviva-tools.svg)](https://opensource.org/licenses/AGPL-3.0)
-[![GitHub issues](https://img.shields.io/github/issues/pbswnegineering/classeviva-tools.svg)](https://github.com/pbswnegineering/classeviva-tools/issues)
+[![License](https://img.shields.io/github/license/pbswengineering/classeviva-tools.svg)](https://opensource.org/licenses/AGPL-3.0)
+[![GitHub issues](https://img.shields.io/github/issues/pbswengineering/classeviva-tools.svg)](https://github.com/pbswengineering/classeviva-tools/issues)
 
 ## Table of contents
 
