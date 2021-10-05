@@ -1,0 +1,3 @@
+# Replace with the actual values that you use to log into Spaggiari's ClasseViva
+USERNAME = "YOUR_CLASSEVIVA_USERNAME"
+PASSWORD = "YOUR_CLASSEVIVA_PASSWORD"
