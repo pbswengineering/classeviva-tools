@@ -69,14 +69,18 @@ if __name__ == "__main__":
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=18)
-            # create a cell
             pdf.cell(200, 10, txt=f"Risultati test di ingresso", ln=1, align="L")
             pdf.set_font("Arial", size=14)
             pdf.cell(200, 20, txt=f"{subject.class_} - {subject.subject}", ln=1, align="L")
-            for i, c in enumerate(competencies):
+            for c in competencies:
                 pdf.cell(200, 10, txt=f"{c.name} = {c.perc}%", ln=1, align="L")
+            pdf.set_font("Arial", size=18)
+            pdf.cell(200, 20, txt=f"Valutazioni individuali", ln=1, align="L")
+            pdf.set_font("Arial", size=14)
+            for g in grades:
+                grade = g.grades[test_index] or "-"
+                pdf.cell(200, 10, txt=f"{g.student.name}  {grade}", ln=1, align="L")
             pdf.output(os.path.join(out_dir, f"{subject.subject} - {subject.class_}.pdf"))
-
-            print(f"The competence levels have also been saved in HTML and PDF format in the {out_dir} directory")
+        print(f"The competence levels have also been saved in HTML and PDF format in the {out_dir} directory")
 
     webbrowser.open(f"file://{html_file}")

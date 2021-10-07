@@ -129,5 +129,6 @@ dmypy.json
 .pyre/
 
 # My stuff
+.vscode/
 settings.py
 reports/
