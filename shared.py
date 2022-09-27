@@ -125,6 +125,8 @@ class ClasseViva:
             s.url_grades = s.url.replace("/regclasse.php", "/regvoti.php")
             s.class_description = tds[1].find("p")["title"].strip()
             s.subject = tds[2].find("div").find("div").find("div")["title"].strip()
+            if not s.class_:
+                s.class_ = s.class_description  # Fix for groups such as 3B_AFM, 3B_SIA
             subjects.append(s)
         return subjects
 
@@ -141,6 +143,7 @@ class ClasseViva:
             divs = td.find_all("div")
             s.name = divs[0].get_text().strip()
             bday_str = divs[1].get_text().strip()
+            bday_str = bday_str.split(" ")[0]  # Fix for groups such as 3B_SIA, 3B_AFM
             s.birthday = datetime.strptime(bday_str, "%d-%m-%Y")
             students.append(s)
         return students
@@ -199,7 +202,7 @@ class ClasseViva:
         competencies: List[CompetenceLevel],
         grades: List[StudentGrades],
         count: int,
-    ) -> List[Student]:
+    ) -> Optional[List[Student]]:
         """
         Compute score counts and threshold percentages for the specified competencies
         (used to calculate the score levels percentages of the entry tests results).
@@ -218,6 +221,8 @@ class ClasseViva:
                         c.count += 1
             else:
                 missing_students.append(g.student)
+        if tot == 0:
+            return None
         max_perc = 0
         sum_perc = 0
         max_perc_idx = -1

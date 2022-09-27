@@ -47,6 +47,8 @@ if __name__ == "__main__":
                 CompetenceLevel("Competenza avanzata (9, 10)", lambda x: x > 8),
             ]
             missing = cv.compute_competence_levels(competencies, grades, test_index)
+            if missing is None:  # There are no tests for this class, at this index in this term
+                continue
 
             # Output the result to the screen
             print(subject.class_, "\n")
