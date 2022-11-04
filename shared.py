@@ -11,10 +11,10 @@
 #
 
 from datetime import datetime
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 import requests
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup, Tag  # type: ignore
 
 from settings import *
 
@@ -38,6 +38,18 @@ class Subject:
         return f"{self.class_} ({self.class_description}) - {self.subject}"
 
 
+class Class:
+    """
+    A class (year number and section letter, e.g. 4A)
+    """
+
+    def __init__(self):
+        self.name = ""
+        self.code = ""
+    
+    def __str(self) -> str:
+        return self.name
+
 class Student:
     """
     A student's personal data.
@@ -51,12 +63,52 @@ class Student:
         return f"{self.name} ({self.birthday.strftime('%Y-%m-%d')})"
 
 
+class Grade:
+    """
+    A grade in a specific subject.
+    """
+
+    subject: str
+    grade: Optional[float]
+
+    def __init__(self):
+        self.subject = ""
+        self.grade = None
+
+    def sanitized_subject(self) -> str:
+        if self.subject == "educazione civica":
+            return "ed civica"
+        if "francese" in self.subject:
+            return "francese"
+        if "inglese" in self.subject:
+            return "inglese"
+        if "spagnolo" in self.subject:
+            return "spagnolo"
+        if "tecnologie informatiche" in self.subject:
+            return "lab. informatica"
+        if "integrate" in self.subject and "fisica" in self.subject:
+            return "fisica"
+        if "integrate" in self.subject and "terra" in self.subject:
+            return "sc. della terra"
+        if "letteratura" in self.subject:
+            return "itaiano"
+        if "motorie" in self.subject:
+            return "ed. fisica"
+        if "aziendale" in self.subject:
+            return "ec. aziendale"
+        if self.subject == "economia politica":
+            return "ec. politica"
+        if "cattolica" in self.subject:
+            return "religione"
+        return self.subject
+
+
 class StudentGrades:
     """
     List of grades of a specific students for a specific subject.
     """
 
-    grades: List[Optional[int]]
+    grades: List[Union[Optional[int], Grade]]
 
     def __init__(self, student: Student):
         self.student = student
@@ -103,6 +155,30 @@ class ClasseViva:
         res.raise_for_status()
         res = self.session.post("https://web.spaggiari.eu/home/app/default/login_ok_redirect.php")
         res.raise_for_status()
+    
+    def get_classes(self) -> Class:
+        """
+        Return the list of the classes available for the current login,
+        if the login is a coordinator.
+        """
+        res = self.session.get("https://web.spaggiari.eu/cvv/app/default/gioprof_coordinatore.php")
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+        tables = [t for t in soup.find_all("table") if "Valutazioni" in t.get_text()]
+        if not tables:
+            raise Exception("Table of classes not found")
+        rows = tables[0].find_all("tr", {"valign": "top"})[1:]
+        classes = []
+        for row in rows:
+            tds = row.find_all("td")
+            c = Class()
+            c.name = tds[0].get_text().strip()
+            a_chrono = tds[3].find("a")
+            # e.g. https://web.spaggiari.eu/cvv/app/default/programma_struttura.php?classe_id=1248202
+            c.code = a_chrono["href"].split("=")[1].strip()
+            classes.append(c)
+        return classes
+
 
     def get_subjects(self) -> List[Subject]:
         """
@@ -129,6 +205,40 @@ class ClasseViva:
                 s.class_ = s.class_description  # Fix for groups such as 3B_AFM, 3B_SIA
             subjects.append(s)
         return subjects
+    
+    def get_avg_grades(self, class_: Class, term: str) -> List[StudentGrades]:
+        res = self.session.get(f"https://web.spaggiari.eu/cvv/app/default/coordinatore_medie.php?classe_id={class_.code}&quad={term}")
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+        ths = soup.find_all("th", {"class": "materia"})
+        subjects = [th.get_text().strip() for th in ths if isinstance(th, Tag)]
+        tables = soup.find_all("table", {"id": "center_table"})
+        # Student names
+        tbody = tables[0].find("tbody")
+        trs = tbody.find_all("tr")
+        students = []
+        for tr in trs:
+            td = tr.find("td")
+            s = Student()
+            s.name = "".join(c for c in td.get_text() if c.isalpha() or c == " ").strip()
+            students.append(s)
+        # Grades
+        tbody = tables[1].find("tbody")
+        trs = tbody.find_all("tr")
+        student_grades = []
+        for k, tr in enumerate(trs):
+            tds = tr.find_all("td", {"class": "registro"})
+            if not tds:
+                continue
+            scores = [td.get_text().strip() for td in tds if isinstance(td, Tag)]
+            s = StudentGrades(students[k])
+            for i in range(len(subjects)):
+                g = Grade()
+                g.subject = subjects[i].replace(".", "").strip()
+                g.grade = scores[i] and float(scores[i]) or None
+                s.grades.append(g)
+            student_grades.append(s)
+        return student_grades
 
     def get_students(self, subject: Subject) -> List[Student]:
         """
