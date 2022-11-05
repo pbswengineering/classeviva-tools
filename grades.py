@@ -29,7 +29,7 @@ if __name__ == "__main__":
         os.mkdir("reports")
     outfile = os.path.join("reports", "grades_" + class_ + ".html")
     with open(outfile, "w") as f:
-        f.write(f"""<!doctype html>
+        f.write(f"""<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -49,7 +49,7 @@ if __name__ == "__main__":
   </head>
   <body> 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container-fluid">
+  <div class="container">
     <a class="navbar-brand" href="#">
         <img alt="Logo" width="28" height="33" class="d-inline-block align-text-top" src="https://www.bernardi.cloud/school/cc.png">
         {class_} GRADE CHARTS
@@ -61,12 +61,33 @@ if __name__ == "__main__":
         COLS_PER_ROW = 3
         for i, sg in enumerate(student_grades):
             if (i % COLS_PER_ROW) == 0:
-                f.write('<div class="row">')
+                f.write(f'<div class="row row-cols-md-1 row-cols-lg-{COLS_PER_ROW} g-4">')
+            css_border = ""
+            css_text = ""
+            avg = sg.avg()
+            if avg is None:
+                avg_str = ""
+            else:
+                avg_str = f"{avg:.1f}"
+            bad_grades, bad_subjects = sg.bad_grades()
+            bad_subjects = [bs.replace(" ", "&nbsp;") for bs in bad_subjects]
+            if bad_grades is not None and bad_grades > 0:
+                css_border = " border-danger"
+                css_text = " text-danger"
+                bad_str = f"<br>Insufficient grades: {bad_grades} ({', '.join(bad_subjects)})"
+            else:
+                bad_str = ""
+            if avg >= 8:
+                css_border = " border-success"
+                css_text = " text-success"
             f.write(f"""
 <div class="col">
-    <div class="card">
-        <div class="card-header">{i+1}. {sg.student.name.upper()}</div>
-        <div class="card-body"><canvas id="student_{i}"></canvas></div>
+    <div class="card{css_border}{css_text}">
+        <div class="card-header{css_border}{css_text}">{i+1}. {sg.student.name.upper()}</div>
+        <div class="card-body{css_border}{css_text}"><canvas id="student_{i}"></canvas></div>
+        <div class="card-footer{css_border}{css_text}">
+        Average: {avg_str}{bad_str} 
+        </div>
     </div>
 </div>
 """)
@@ -80,6 +101,18 @@ if __name__ == "__main__":
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+function gradePointColor(ctx) {
+    if (ctx.raw > 0 && ctx.raw < 5.5)
+        return 'rgb(255, 99, 132)';
+    else
+        return 'rgb(54, 162, 235)';
+}
+function gradePointRadius(ctx) {
+    if (ctx.raw > 0 && ctx.raw < 5.5)
+        return 8;
+    else
+        return 4;
+}
 let data = [];
 """)
         for i, sg in enumerate(student_grades):
@@ -91,12 +124,13 @@ data.push({
     datasets: [{
         data: [""" + ",".join(scores) + """],
         fill: true,
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        borderColor: 'rgb(255, 99, 132)',
-        pointBackgroundColor: 'rgb(255, 99, 132)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        borderColor: 'rgb(54, 162, 235)',
+        pointBackgroundColor: gradePointColor,
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgb(255, 99, 132)'
+        pointHoverBorderColor: 'rgb(54, 162, 235)',
+        pointRadius: gradePointRadius
     }]
 })
 """)

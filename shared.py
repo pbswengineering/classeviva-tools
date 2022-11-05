@@ -91,7 +91,7 @@ class Grade:
         if "integrate" in self.subject and "terra" in self.subject:
             return "sc. della terra"
         if "letteratura" in self.subject:
-            return "itaiano"
+            return "italiano"
         if "motorie" in self.subject:
             return "ed. fisica"
         if "aziendale" in self.subject:
@@ -113,6 +113,38 @@ class StudentGrades:
     def __init__(self, student: Student):
         self.student = student
         self.grades = []
+    
+    def avg(self):
+        if not self.grades:
+            return None
+        gsum = 0
+        gcount = 0
+        for g in self.grades:
+            if isinstance(g, Grade) and g.grade is not None:
+                gsum += g.grade
+            elif isinstance(g, float):
+                gsum += g
+            else:
+                continue
+            gcount += 1
+        if gcount > 0:
+            return gsum / gcount
+        else:
+            return None
+    
+    def bad_grades(self):
+        if not self.grades:
+            return None
+        gbad = 0
+        gbadsubj = []
+        for i, g in enumerate(self.grades):
+            if isinstance(g, Grade) and g.grade is not None and g.grade < 5.5:
+                gbad += 1
+                gbadsubj.append(g.sanitized_subject())
+            elif isinstance(g, float) and g < 5.5:
+                gbad += 1
+                gbadsubj.append(f"subject{i}")
+        return gbad, gbadsubj
 
     def __str__(self) -> str:
         return f"{self.student.name} -> {' '.join(str(g) for g in self.grades)}"
