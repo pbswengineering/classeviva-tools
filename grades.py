@@ -4,9 +4,8 @@
 #
 
 import argparse
-from datetime import datetime
 import os
-from sys import argv, exit
+from sys import exit
 
 from shared import *
 
@@ -25,6 +24,15 @@ if __name__ == "__main__":
         exit(1)
     c = classes[0]
     student_grades = cv.get_avg_grades(c, term)
+    bad_grades_by_subject = {}
+    for sg in student_grades:
+        bg = sg.bad_grades()
+        for subject in bg[1]:
+            if subject in bad_grades_by_subject:
+                bad_grades_by_subject[subject] += 1
+            else:
+                bad_grades_by_subject[subject] = 1
+    bad_grades_by_subject = dict(reversed(sorted(bad_grades_by_subject.items(), key=lambda item: item[1])))
     if not os.path.exists("reports"):
         os.mkdir("reports")
     outfile = os.path.join("reports", "grades_" + class_ + ".html")
@@ -42,6 +50,9 @@ if __name__ == "__main__":
     <![endif]-->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <style>
+    h1 {{
+        margin-top: 1em;
+    }}
     .card {{
         margin-top: 1em;
     }}
@@ -57,6 +68,11 @@ if __name__ == "__main__":
   </div>
 </nav>
   <div class="container text-center">
+    <h1>Bad grades by subject</h1>
+    <div class="row row-cols-1 g-4">
+        <canvas id="bad-grades-by-subject"></canvas>
+    </div>
+    <h1>Student performance</h1>
 """)
         COLS_PER_ROW = 3
         for i, sg in enumerate(student_grades):
@@ -154,5 +170,25 @@ for (let i = 0; i < data.length; ++i) (function () {
     };
     new Chart(document.getElementById('student_' + i), config);
 })();
+new Chart(document.getElementById("bad-grades-by-subject"), {
+    type: 'bar',
+    data: {
+      labels: [""" + ",".join(f'"{x}"' for x in bad_grades_by_subject.keys()) + """],
+      datasets: [
+        {
+          label: "Bad grades",
+          backgroundColor: 'rgb(54, 162, 235)',
+          data: [""" + ",".join(str(x) for x in bad_grades_by_subject.values()) + """]
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        title: { display: false },
+      }
+    }
+});
 </script></body></html>""")
     print("Output saved as", outfile)
