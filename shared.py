@@ -132,18 +132,24 @@ class StudentGrades:
         else:
             return None
     
-    def bad_grades(self):
+    def bad_grades(self, from_grade=0, to_grade=5.5, subject_only=False):
         if not self.grades:
             return None
         gbad = 0
         gbadsubj = []
         for i, g in enumerate(self.grades):
-            if isinstance(g, Grade) and g.grade is not None and g.grade < 5.5:
+            if isinstance(g, Grade) and g.grade is not None and g.grade <= to_grade and g.grade > from_grade:
                 gbad += 1
-                gbadsubj.append(g.sanitized_subject())
-            elif isinstance(g, float) and g < 5.5:
+                if subject_only:
+                    gbadsubj.append(f"{g.sanitized_subject()}")
+                else:
+                    gbadsubj.append(f"{g.sanitized_subject()} ({g.grade})")
+            elif isinstance(g, float) and g <= to_grade and g > from_grade:
                 gbad += 1
-                gbadsubj.append(f"subject{i}")
+                if subject_only:
+                    gbadsubj.append(f"subject{i}")
+                else:
+                    gbadsubj.append(f"subject{i} ({g})")
         return gbad, gbadsubj
 
     def __str__(self) -> str:

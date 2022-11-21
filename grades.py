@@ -26,7 +26,7 @@ if __name__ == "__main__":
     student_grades = cv.get_avg_grades(c, term)
     bad_grades_by_subject = {}
     for sg in student_grades:
-        bg = sg.bad_grades()
+        bg = sg.bad_grades(subject_only=True)
         for subject in bg[1]:
             if subject in bad_grades_by_subject:
                 bad_grades_by_subject[subject] += 1
@@ -88,14 +88,19 @@ if __name__ == "__main__":
                 avg_str = ""
             else:
                 avg_str = f"{avg:.1f}"
-            bad_grades, bad_subjects = sg.bad_grades()
+            bad_str = ""
+            bad_grades, bad_subjects = sg.bad_grades(4, 5.5)
             bad_subjects = [bs.replace(" ", "&nbsp;") for bs in bad_subjects]
             if bad_grades is not None and bad_grades > 0:
                 css_border = " border-danger"
                 css_text = " text-danger"
-                bad_str = f"<br>Insufficient grades: {bad_grades} ({', '.join(bad_subjects)})"
-            else:
-                bad_str = ""
+                bad_str += f"<br>{bad_grades} insufficient grade{bad_grades > 1 and 's' or ''}: {', '.join(bad_subjects)}"
+            very_bad_grades, very_bad_subjects = sg.bad_grades(-1, 4)
+            very_bad_subjects = [vbs.replace(" ", "&nbsp;") for vbs in very_bad_subjects]
+            if very_bad_grades is not None and very_bad_grades > 0:
+                css_border = " border-danger"
+                css_text = " text-danger"
+                bad_str += f"<br>{very_bad_grades} very bad grade{very_bad_grades > 1 and 's' or ''}: {', '.join(very_bad_subjects)}"
             if avg >= 8:
                 css_border = " border-success"
                 css_text = " text-success"
