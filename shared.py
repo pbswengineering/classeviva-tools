@@ -27,6 +27,7 @@ class Subject:
 
     def __init__(self):
         self.class_ = ""
+        self.class_id = ""
         self.class_description = ""
         self.subject = ""
         self.url = ""
@@ -175,6 +176,23 @@ class CompetenceLevel:
         return f"{self.name} {self.perc}% ({self.count})"
 
 
+class AgendaItem:
+    def __init__(self, title: str, start: str, end: str, all_day: bool, note: str, author_desc: str, class_desc: str):
+        self.title = title
+        self.start = start
+        self.end = end
+        self.all_day = all_day
+        self.note = note
+        self.author_desc = author_desc
+        self.class_desc = class_desc
+    
+    def __str__(self):
+        return f"{self.start} {self.class_desc} - {self.author_desc}: {self.note}".replace(':00 ', ' ')
+
+    def __repr__(self):
+        return self.__str__()
+
+
 class ClasseViva:
     def __init__(self, username: str, password: str):
         self.session = requests.session()
@@ -194,7 +212,7 @@ class ClasseViva:
         res = self.session.post("https://web.spaggiari.eu/home/app/default/login_ok_redirect.php")
         res.raise_for_status()
     
-    def get_classes(self) -> Class:
+    def get_classes(self) -> List[Class]:
         """
         Return the list of the classes available for the current login,
         if the login is a coordinator.
@@ -234,6 +252,7 @@ class ClasseViva:
             tds = row.find_all("td")
             s = Subject()
             a_class = tds[0].find("a")
+            s.class_id = a_class["href"].split("classe_id=")[1].split("&")[0]
             s.class_ = a_class.get_text().strip()
             s.url = "https://web.spaggiari.eu/cvv/app/default/" + a_class["href"]
             s.url_grades = s.url.replace("/regclasse.php", "/regvoti.php")
@@ -384,3 +403,28 @@ class ClasseViva:
         if sum_perc < 100:
             competencies[max_perc_idx].perc += 100 - sum_perc
         return missing_students
+    
+    def get_agenda(self, start: str, end: str, author_id: str, class_id: str, classe_desc_alt: Optional[str] = None) -> List[AgendaItem]:
+        res = self.session.post(
+            f"https://web.spaggiari.eu/cvv/app/default/agenda.php?ope=get_events&mode=agenda&tutte_note=0",
+            data={
+                "classe_id": class_id,
+                "start": start,
+                "end": end,
+            })
+        res.raise_for_status()
+        items = []
+        res_json = res.json()
+        for j in res_json:
+            if j["autore_id"] != author_id:
+                continue
+            items.append(AgendaItem(
+                j["title"], 
+                j["start"], 
+                j["end"], 
+                j["allDay"], 
+                (j["nota_1"] + " " + j["nota_2"]).strip(),
+                j["autore_desc"],
+                j["classe_desc"] or classe_desc_alt))
+        return items
+

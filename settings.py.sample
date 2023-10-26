@@ -1,3 +1,13 @@
 # Replace with the actual values that you use to log into Spaggiari's ClasseViva
 USERNAME = "YOUR_CLASSEVIVA_USERNAME"
 PASSWORD = "YOUR_CLASSEVIVA_PASSWORD"
+AUTORE_ID = "9999999"
+EXTRA_CLASS_IDS = ["9999999"]  # For classes not shown on the selection (e.g. because of groups)
+
+EMAIL_USE_TLS = True
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = "somerandomemail@gmail.com"
+EMAIL_HOST_PASSWORD = "myverysecurepassword"
+EMAIL_PORT = 587
+EMAIL_FROM = "somerandomemail@gmail.com"
+EMAIL_TO = "myemailaddress@mydomain.com"
