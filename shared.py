@@ -189,6 +189,16 @@ class AgendaItem:
     def __str__(self):
         return f"{self.start} {self.class_desc} - {self.author_desc}: {self.note}".replace(':00 ', ' ')
 
+    def html(self):
+        return f"""
+<tr>
+<td>{self.start}</td>
+<td>{self.class_desc}</td>
+<td>{self.author_desc}</td>
+<td>{self.note}</td>
+</tr>
+""".replace(':00 ', ' ')
+    
     def __repr__(self):
         return self.__str__()
 

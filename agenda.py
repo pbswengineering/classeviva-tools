@@ -17,7 +17,7 @@ import smtplib
 from shared import *
 
 
-def send_email(to: str, subject: str, body: str):
+def send_email(to: str, subject: str, text: str, html: str):
     """
     Send an email using the configuration parameters from settings.py.
     """
@@ -30,7 +30,8 @@ def send_email(to: str, subject: str, body: str):
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = EMAIL_FROM
-        message.attach(MIMEText(body, "plain"))
+        message.attach(MIMEText(text, "plain"))
+        message.attach(MIMEText(html, "html"))
         message["To"] = to
         server.sendmail(EMAIL_FROM, to, message.as_string())
 
@@ -44,6 +45,20 @@ if __name__ == "__main__":
     agenda = []
     for class_id in [x for x in [s.class_id for s in cv.get_subjects()] + list(EXTRA_CLASS_IDS.keys()) if x]:
         agenda.extend(cv.get_agenda(start_date, end_date, AUTORE_ID, class_id, EXTRA_CLASS_IDS.get(class_id)))
-    subject = f"Agenda dal {start_date} al {end_date}"
-    body = "\n\n".join(str(ai) for ai in sorted(agenda, key=lambda x: x.start))
-    send_email(EMAIL_TO, subject, body)
+    if agenda:
+        subject = f"Agenda dal {start_date} al {end_date}"
+        text = "\n\n".join(str(ai) for ai in sorted(agenda, key=lambda x: x.start))
+        html = """
+<table border="1">
+<thead>
+    <th>When</th>
+    <th>Class</th>
+    <th>Author</th>
+    <th>Note</th>
+</thead>
+<tbody>
+""" + "\n".join(ai.html() for ai in sorted(agenda, key=lambda x: x.start)) + """
+</tbody>
+</table>
+"""
+        send_email(EMAIL_TO, subject, text, html)
