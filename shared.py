@@ -187,12 +187,12 @@ class AgendaItem:
         self.class_desc = class_desc
     
     def __str__(self):
-        return f"{self.start} {self.class_desc} - {self.author_desc}: {self.note}".replace(':00 ', ' ')
+        return f"{self.start.strftime('%A %-d %B')} {self.class_desc} - {self.author_desc}: {self.note}".replace(':00 ', ' ')
 
     def html(self):
         return f"""
 <tr>
-<td>{self.start}</td>
+<td>{self.start.strftime('%A %-d %B')}</td>
 <td>{self.class_desc}</td>
 <td>{self.author_desc}</td>
 <td>{self.note}</td>
@@ -430,8 +430,8 @@ class ClasseViva:
                 continue
             items.append(AgendaItem(
                 j["title"], 
-                j["start"], 
-                j["end"], 
+                datetime.strptime(j["start"], "%Y-%m-%d %H:%M:%S"), 
+                datetime.strptime(j["end"], "%Y-%m-%d %H:%M:%S"), 
                 j["allDay"], 
                 (j["nota_1"] + " " + j["nota_2"]).strip(),
                 j["autore_desc"],
