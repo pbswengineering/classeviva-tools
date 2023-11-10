@@ -95,6 +95,7 @@ def find_matches(timetable, day, hour, text):
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(__file__))
     if not os.path.exists("timetable.json"):
         print("timetable.json doesn't exist, it must be created from scratch.")
         pdf_file = input("PDF FILE: ")
