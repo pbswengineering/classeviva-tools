@@ -109,7 +109,7 @@ if __name__ == "__main__":
     
     if len(argv) == 1 or argv[1] not in ("free", "match"):
         print("Usage: aule.py <COMMAND>")
-        print("\n   COMMAND: free|prof\n")
+        print("\n   COMMAND: free|match\n")
         exit(1)
     
     command = argv[1]
