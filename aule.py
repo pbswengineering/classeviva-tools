@@ -89,8 +89,13 @@ def find_matches(timetable, day, hour, text):
     """
     found = []
     for room, days in timetable.items():
-        if text.lower() in days[day][hour].lower():
-            found.append(room)
+        for h in range(6):
+            if text.lower() in days[day][h].lower():
+                cls = days[day][h].split("\n")[0]
+                if h == hour:
+                    found.append(f"{h+1} {room} {cls} <---")
+                else:
+                    found.append(f"{h+1} {room} {cls}")
     return found
 
 
@@ -107,9 +112,9 @@ if __name__ == "__main__":
         with open("timetable.json", "r") as f:
             timetable = json.load(f)
     
-    if len(argv) == 1 or argv[1] not in ("free", "match"):
+    if len(argv) == 1:
         print("Usage: aule.py <COMMAND>")
-        print("\n   COMMAND: free|match\n")
+        print('\n   COMMAND: free|"some prof. name"\n')
         exit(1)
     
     command = argv[1]
@@ -119,11 +124,8 @@ if __name__ == "__main__":
     if command == "free":
         free_rooms = find_free_room(timetable, day, hour)
         print("\n".join(free_rooms))
-    elif command == "match":
-        if len(argv) < 3:
-            print("The match option requires a text to match")
-            exit(1)
-        text = argv[2]
+    else:
+        text = argv[1]
         matches = find_matches(timetable, day, hour, text)
         if matches:
             print("\n".join(matches))
