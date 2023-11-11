@@ -18,7 +18,7 @@ def import_pdf(pdf_file):
     TOP = (76 * SCALE, 95 * SCALE)
     SIZE = ((255 - 76 + 1) * SCALE, (210 - 95 + 1) * SCALE)
     DAYS = 6
-    HOURS = 6
+    HOURS = 13
     TOP_ROOM = (128 * SCALE, 46 * SCALE)
     SIZE_ROOM = (170 * SCALE, 14 * SCALE)
 
@@ -88,11 +88,12 @@ def find_matches(timetable, day, hour, text):
     Find a class whose description contains the given text
     """
     found = []
+    now_wday = datetime.now().weekday()
     for room, days in timetable.items():
         for h in range(6):
             if text.lower() in days[day][h].lower():
                 cls = days[day][h].split("\n")[0]
-                if h == hour:
+                if h == hour and day == now_wday:
                     found.append(f"{h+1} {room} {cls} <---")
                 else:
                     found.append(f"{h+1} {room} {cls}")
@@ -114,13 +115,16 @@ if __name__ == "__main__":
     
     if len(argv) == 1:
         print("Usage: aule.py <COMMAND>")
-        print('\n   COMMAND: free|"some prof. name"\n')
+        print('\n   COMMAND: <free|"some prof. name"> [day 1-6]\n')
         exit(1)
     
     command = argv[1]
     now = datetime.now()
     hour = get_hour(now)
-    day = now.weekday()
+    if len(argv) == 3:
+        day = int(argv[2]) - 1
+    else:
+        day = now.weekday()
     if command == "free":
         free_rooms = find_free_room(timetable, day, hour)
         print("\n".join(free_rooms))
