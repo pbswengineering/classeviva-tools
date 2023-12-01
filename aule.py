@@ -115,11 +115,15 @@ if __name__ == "__main__":
     
     if len(argv) == 1:
         print("Usage: aule.py <COMMAND>")
-        print('\n   COMMAND: <free|"some prof. name"> [day 1-6]\n')
+        print('\n   COMMAND: <"some prof. name"> [day 1-6]')
+        print('   COMMAND: free [day 1-6] [hh:mm]\n')
         exit(1)
     
     command = argv[1]
     now = datetime.now()
+    if len(argv) == 4:
+        user_time = datetime.strptime(argv[3], "%H:%M")
+        now = now.replace(hour=user_time.hour, minute=user_time.minute)
     hour = get_hour(now)
     if len(argv) == 3:
         day = int(argv[2]) - 1
