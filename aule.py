@@ -131,11 +131,11 @@ if __name__ == "__main__":
         day = now.weekday()
     if command == "free":
         free_rooms = find_free_room(timetable, day, hour)
-        print("\n".join(free_rooms))
+        print("\n".join(sorted(free_rooms)))
     else:
         text = argv[1]
         matches = find_matches(timetable, day, hour, text)
         if matches:
-            print("\n".join(matches))
+            print("\n".join(sorted(matches)))
         else:
             print("Not found.")
