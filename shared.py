@@ -13,6 +13,7 @@
 from datetime import datetime
 from typing import Callable, List, Optional, Union
 
+import re
 import requests
 from bs4 import BeautifulSoup, Tag  # type: ignore
 
@@ -47,9 +48,11 @@ class Class:
     def __init__(self):
         self.name = ""
         self.code = ""
-    
-    def __str(self) -> str:
+        self.link = ""
+
+    def __str__(self) -> str:
         return self.name
+
 
 class Student:
     """
@@ -114,7 +117,7 @@ class StudentGrades:
     def __init__(self, student: Student):
         self.student = student
         self.grades = []
-    
+
     def avg(self):
         if not self.grades:
             return None
@@ -132,14 +135,19 @@ class StudentGrades:
             return gsum / gcount
         else:
             return None
-    
+
     def bad_grades(self, from_grade=0, to_grade=5.5, subject_only=False):
         if not self.grades:
             return None
         gbad = 0
         gbadsubj = []
         for i, g in enumerate(self.grades):
-            if isinstance(g, Grade) and g.grade is not None and g.grade <= to_grade and g.grade > from_grade:
+            if (
+                isinstance(g, Grade)
+                and g.grade is not None
+                and g.grade <= to_grade
+                and g.grade > from_grade
+            ):
                 gbad += 1
                 if subject_only:
                     gbadsubj.append(f"{g.sanitized_subject()}")
@@ -177,7 +185,16 @@ class CompetenceLevel:
 
 
 class AgendaItem:
-    def __init__(self, title: str, start: str, end: str, all_day: bool, note: str, author_desc: str, class_desc: str):
+    def __init__(
+        self,
+        title: str,
+        start: str,
+        end: str,
+        all_day: bool,
+        note: str,
+        author_desc: str,
+        class_desc: str,
+    ):
         self.title = title
         self.start = start
         self.end = end
@@ -185,9 +202,11 @@ class AgendaItem:
         self.note = note
         self.author_desc = author_desc
         self.class_desc = class_desc
-    
+
     def __str__(self):
-        return f"{self.start.strftime('%A %-d %B')} {self.class_desc} - {self.author_desc}: {self.note}".replace(':00 ', ' ')
+        return f"{self.start.strftime('%A %-d %B')} {self.class_desc} - {self.author_desc}: {self.note}".replace(
+            ":00 ", " "
+        )
 
     def html(self):
         return f"""
@@ -197,8 +216,10 @@ class AgendaItem:
 <td>{self.author_desc}</td>
 <td>{self.note}</td>
 </tr>
-""".replace(':00 ', ' ')
-    
+""".replace(
+            ":00 ", " "
+        )
+
     def __repr__(self):
         return self.__str__()
 
@@ -206,7 +227,9 @@ class AgendaItem:
 class ClasseViva:
     def __init__(self, username: str, password: str):
         self.session = requests.session()
-        res = self.session.get("https://web.spaggiari.eu/home/app/default/login.php?target=cvv&mode=")
+        res = self.session.get(
+            "https://web.spaggiari.eu/home/app/default/login.php?target=cvv&mode="
+        )
         res.raise_for_status()
         res = self.session.post(
             "https://web.spaggiari.eu/auth-p7/app/default/AuthApi4.php?a=aLoginPwd",
@@ -219,15 +242,19 @@ class ClasseViva:
             },
         )
         res.raise_for_status()
-        res = self.session.post("https://web.spaggiari.eu/home/app/default/login_ok_redirect.php")
+        res = self.session.post(
+            "https://web.spaggiari.eu/home/app/default/login_ok_redirect.php"
+        )
         res.raise_for_status()
-    
+
     def get_classes(self) -> List[Class]:
         """
         Return the list of the classes available for the current login,
         if the login is a coordinator.
         """
-        res = self.session.get("https://web.spaggiari.eu/cvv/app/default/gioprof_coordinatore.php")
+        res = self.session.get(
+            "https://web.spaggiari.eu/cvv/app/default/gioprof_coordinatore.php"
+        )
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
         tables = [t for t in soup.find_all("table") if "Valutazioni" in t.get_text()]
@@ -245,18 +272,60 @@ class ClasseViva:
             classes.append(c)
         return classes
 
+    def get_all_classes(self) -> List[Class]:
+        res = self.session.get(
+            "https://web.spaggiari.eu/cvv/app/default/selezione_classi.php"
+        )
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+        a_list = soup.find_all("a")
+        classes = []
+        for a in a_list:
+            if a.has_attr("href") and "regclasse.php" in a["href"]:
+                c = Class()
+                c.link = "https://web.spaggiari.eu/cvv/app/default/" + a["href"]
+                c.name = a.get_text().strip().split("\n")[0]
+                match = re.findall(r"classe_id=(\d+)", a["href"])
+                if match:
+                    c.code = match[0]
+                    classes.append(c)
+        return classes
+
+    def get_students_by_class(self, clazz: Class):
+        res = self.session.get(clazz.link)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+        students = []
+        for td in soup.find_all("td", {"class": "elenco_studenti"}):
+            s = Student()
+            divs = td.find_all("div")
+            s.name = divs[0].get_text().strip()
+            bday_str = divs[1].get_text().strip()
+            bday_str = bday_str.replace("MAGGIORENNE", "").strip()
+            bday_str = bday_str.split(" ")[0]  # Fix for groups such as 3B_SIA, 3B_AFM
+            s.birthday = datetime.strptime(bday_str, "%d-%m-%Y")
+            students.append(s)
+        return students
 
     def get_subjects(self) -> List[Subject]:
         """
         Return the list of subject available for the current login.
         """
-        res = self.session.get("https://web.spaggiari.eu/cvv/app/default/gioprof_selezione.php")
+        res = self.session.get(
+            "https://web.spaggiari.eu/cvv/app/default/gioprof_selezione.php"
+        )
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
-        tables = [t for t in soup.find_all("table") if "Giornale del professore" in t.get_text()]
+        tables = [
+            t
+            for t in soup.find_all("table")
+            if "Giornale del professore" in t.get_text()
+        ]
         if not tables:
             raise Exception("Table of classes not found")
-        rows = tables[0].find_all("tr", {"valign": "top"})[1:]  # The first row is the header
+        rows = tables[0].find_all("tr", {"valign": "top"})[
+            1:
+        ]  # The first row is the header
         subjects = []
         for row in rows:
             tds = row.find_all("td")
@@ -272,9 +341,11 @@ class ClasseViva:
                 s.class_ = s.class_description  # Fix for groups such as 3B_AFM, 3B_SIA
             subjects.append(s)
         return subjects
-    
+
     def get_avg_grades(self, class_: Class, term: str) -> List[StudentGrades]:
-        res = self.session.get(f"https://web.spaggiari.eu/cvv/app/default/coordinatore_medie.php?classe_id={class_.code}&quad={term}")
+        res = self.session.get(
+            f"https://web.spaggiari.eu/cvv/app/default/coordinatore_medie.php?classe_id={class_.code}&quad={term}"
+        )
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
         ths = soup.find_all("th", {"class": "materia"})
@@ -287,7 +358,9 @@ class ClasseViva:
         for tr in trs:
             td = tr.find("td")
             s = Student()
-            s.name = "".join(c for c in td.get_text() if c.isalpha() or c == " ").strip()
+            s.name = "".join(
+                c for c in td.get_text() if c.isalpha() or c == " "
+            ).strip()
             students.append(s)
         # Grades
         tbody = tables[1].find("tbody")
@@ -340,11 +413,15 @@ class ClasseViva:
                 if not "comp=" in href:
                     url = "https://web.spaggiari.eu/cvv/app/default/" + href
                     subject.url_grades_term.append(url)
-                    subject.url_tests_term.append(url.replace("/regvoti.php", "/recuperi_docente.php"))
+                    subject.url_tests_term.append(
+                        url.replace("/regvoti.php", "/recuperi_docente.php")
+                    )
             except KeyError:
                 pass
 
-    def get_tests(self, subject: Subject, students: List[Student], term: int) -> List[StudentGrades]:
+    def get_tests(
+        self, subject: Subject, students: List[Student], term: int
+    ) -> List[StudentGrades]:
         """
         Returns the StudentGrades (list of grades associated to a specific
         student) of each student for a specific test.
@@ -413,28 +490,38 @@ class ClasseViva:
         if sum_perc < 100:
             competencies[max_perc_idx].perc += 100 - sum_perc
         return missing_students
-    
-    def get_agenda(self, start: str, end: str, author_id: str, class_id: str, classe_desc_alt: Optional[str] = None) -> List[AgendaItem]:
+
+    def get_agenda(
+        self,
+        start: str,
+        end: str,
+        author_id: str,
+        class_id: str,
+        classe_desc_alt: Optional[str] = None,
+    ) -> List[AgendaItem]:
         res = self.session.post(
             f"https://web.spaggiari.eu/cvv/app/default/agenda.php?ope=get_events&mode=agenda&tutte_note=0",
             data={
                 "classe_id": class_id,
                 "start": start,
                 "end": end,
-            })
+            },
+        )
         res.raise_for_status()
         items = []
         res_json = res.json()
         for j in res_json:
             if j["autore_id"] != author_id:
                 continue
-            items.append(AgendaItem(
-                j["title"], 
-                datetime.strptime(j["start"], "%Y-%m-%d %H:%M:%S"), 
-                datetime.strptime(j["end"], "%Y-%m-%d %H:%M:%S"), 
-                j["allDay"], 
-                (j["nota_1"] + " " + j["nota_2"]).strip(),
-                j["autore_desc"],
-                j["classe_desc"] or classe_desc_alt))
+            items.append(
+                AgendaItem(
+                    j["title"],
+                    datetime.strptime(j["start"], "%Y-%m-%d %H:%M:%S"),
+                    datetime.strptime(j["end"], "%Y-%m-%d %H:%M:%S"),
+                    j["allDay"],
+                    (j["nota_1"] + " " + j["nota_2"]).strip(),
+                    j["autore_desc"],
+                    j["classe_desc"] or classe_desc_alt,
+                )
+            )
         return items
-
